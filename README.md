@@ -57,11 +57,29 @@ Some of the important cofiguration parameters are marked in red box.
 Now run the graph and verify the target file has been generated.<br><br>
 ![](images/FileInitialLoading.png)
 
-Also, verify the table content has been replicated to the target file successfully.<br><br>
+Also, open the file and verify the table content has been replicated to the target file successfully.<br><br>
 ![](images/FileInitialLoadingContent.png)
 
-Now we see that we have successfully replicated the conent of HANA source table to the specified tagret file. let's turn to the Delta extraction task.
+Now we see that our initial loading task has been finished successfully. let's turn to the Delta extraction task.
 
 ## Delta extraction[(Graph source code)](https://github.com/Andyyh2005/log-based-integration-with-DI/blob/master/src/vrep/vflow/graphs/CDC_InitialLoading_test/graph.json)
-The following figure illustrates the initial loading graph:<br><br>
-![](images/FileInitialLoadingContent.png)
+The following figure illustrates the Delta extraction graph:<br><br>
+![](images/GraphDeltaExtraction.png)
+
+Let's take an overview of the dataflow sequence of this grpah.
+- The constant generator operator will trigger the Table Replicator to begin the CDC delta tracking once the graph start running.
+- The Table Replicator operator(labeled as "CDC (delta tracking)") will replicated the database changes to a tagret file. 
+- The Read File operator(labeled as "Read Delta File")will read the target file content and send its content to downstream JS operator.
+- The JS operator(labeled as "Parse & send changes") will parse the received file content and send the parsed change message into Kafka.
+- The downstream Kakfa Producer operator will receieve the incoming messages and publish them into the specified topic on the Kafka cluster.
+- The Kafka Consumers subscribe the specified topic and consume the messages from the Kafka cluster.
+- The Connected Wiretap opertor(labeled as "Change consumer1" and "Change consumer2") acts as the derived data system applying the change messages.
+
+Now let's take a look at the configuraion of some operators in this graph.
+
+### Table Replicator
+We name is as "CDC (delta tracking)". Its configuration is illustrated as below.<br><br>
+![](images/ConfigTableReplicatorDeltaTracking.png)
+
+Some of the important cofiguration parameters are marked in red box.
+> Note that the **deltaGrapMode** is set to Manual. This ensures the graph would finish its execution once the intial loading completed. Otherwise, the graph would run indefinitely to track further delta changes.

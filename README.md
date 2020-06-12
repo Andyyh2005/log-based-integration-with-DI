@@ -18,7 +18,7 @@ Change data capture(CDC) is the process of observing all data changes written to
 
 SAP Data Intelligence 3.0 introduced the table Replicator operator which allows capturing delta changes for different databases. Besides capturing the delta, this operator also handles applying the changes to a target table, allowing replication of tables in an efficient and secure way, through an in-built recovery mechanism.
 
-Table Replicator operator effectively implements the concept of change data capture(CDC) using an approach of trigger-based replication. For more detail, see https://help.sap.com/viewer/97fce0b6d93e490fadec7e7021e9016e/Cloud/en-US/79fcadb91f584f868a6662111b92f6e7.html.
+Table Replicator operator effectively implements the CDC using an approach of trigger-based replication. For more detail, see https://help.sap.com/viewer/97fce0b6d93e490fadec7e7021e9016e/Cloud/en-US/79fcadb91f584f868a6662111b92f6e7.html.
 
 ### Kafka
 Apache Kafka is a message broker which provides a total ordering of the messages inside each partition. A partition lives on a physical node and persists the messages it receives.
@@ -69,6 +69,7 @@ The following figure illustrates the Delta extraction graph:<br><br>
 Let's take an overview of the dataflow sequence of this grpah.
 - The constant generator operator will trigger the Table Replicator to begin the CDC delta tracking once the graph start running.
 - The Table Replicator operator(labeled as "CDC (delta tracking)") will replicated the database changes to a tagret file. 
+- The JS operator(labeled as "Remove path prefix") will remove the '/vrep' prefix from the target file path. The prefix was added by Table Replicator operator which will prevent the downstream Read File operator from finding the file if we do not remove it.
 - The Read File operator(labeled as "Read Delta File")will read the target file content and send its content to downstream JS operator.
 - The JS operator(labeled as "Parse & send changes") will parse the received file content and send the parsed change message into Kafka.
 - The downstream Kakfa Producer operator will receieve the incoming messages and publish them into the specified topic on the Kafka cluster.
@@ -78,8 +79,118 @@ Let's take an overview of the dataflow sequence of this grpah.
 Now let's take a look at the configuraion of some operators in this graph.
 
 ### Table Replicator
-We name is as "CDC (delta tracking)". Its configuration is illustrated as below.<br><br>
+Its configuration is illustrated as below.<br><br>
 ![](images/ConfigTableReplicatorDeltaTracking.png)
 
 Some of the important cofiguration parameters are marked in red box.
-> Note that the **deltaGrapMode** is set to Manual. This ensures the graph would finish its execution once the intial loading completed. Otherwise, the graph would run indefinitely to track further delta changes.
+> Note that the **deltaGrapMode** is set to "Polling Interval", and the **maxPollingInterval** is set to "60". This ensures the graph would run indefinitely to track delta changes, and Table Replicator will polling the delta changes within one minute.
+
+### The "Remove path prefix" JS operator 
+The script code of this operator is shown below
+```
+$.setPortCallback("input",onInput);
+
+function onInput(ctx,s) {
+    var msg = {};
+
+    msg.Attributes = {};
+    for (var key in s.Attributes) {
+        msg.Attributes[key] = s.Attributes[key];
+    }
+    
+    msg.Body = s.Body.replace(/^\/vrep/, '');
+    $.output(msg);
+}
+```
+It simply remove the "/vrep" prefix from the receieved message body(The body contains the target file path)
+
+### The "Parse & send changes JS operator 
+The script code of this operator is shown below.
+```
+$.setPortCallback("input",onInput);
+
+function isByteArray(data) {
+    switch (Object.prototype.toString.call(data)) {
+        case "[object Int8Array]":
+        case "[object Uint8Array]":
+            return true;
+        case "[object Array]":
+        case "[object GoArray]":
+            return data.length > 0 && typeof data[0] === 'number';
+    }
+    return false;
+}
+
+function onInput(ctx,s) {
+    var inbody = s.Body;
+    var inattributes = s.Attributes;
+    
+    var msg = {};
+    msg.Attributes = {};
+    for (var key in inattributes) {
+        msg.Attributes[key] = inattributes[key];
+    }
+
+    // convert the body into string if it is bytes
+    if (isByteArray(inbody)) {
+        inbody = String.fromCharCode.apply(null, inbody);
+    }
+    
+    var lines = inbody.split(/\r\n/);
+    
+    if (typeof inbody === 'string') {
+        // if the body is a string (e.g., a plain text or json string),
+        msg.Attributes["js.action"] = "parseFile";
+        
+        var readOffset = 1;
+        var dataCols = lines[0].split(',');
+        var o_inter = {};
+        var fields = [];
+
+        lines.slice(readOffset).forEach(function(line) {
+            if(line.length !== 0){
+                fields = line.split(',')
+                dataCols.forEach(function(c, i) {
+                    o_inter[c] = fields[i];
+                    
+                });
+                ++readOffset;
+                msg.Body = o_inter;
+                $.output(msg);
+           }
+        });
+    }
+    else {
+        // if the body is an object (e.g., a json object),
+        // forward the body and indicate it in attribute js.action
+        msg.Body = inbody;
+        msg.Attributes["js.action"] = "noop";
+        $.output(msg);
+    }
+}
+
+```
+It simply parse the target file contnet line by line. And each line represents a change message and sent to the downstream operator.
+
+### Kafka Producer
+Its configuration is illustrated as below.<br><br>
+![](images/ConfigKafkaProducer.png)
+Some of the important cofiguration parameters are marked in red box.
+
+### Kafka Consumer1
+Its configuration is illustrated as below.<br><br>
+![](images/ConfigKafkaConsumer1.png)
+Some of the important cofiguration parameters are marked in red box.
+
+### Kafka Consumer2
+Its configuration is illustrated as below.<br><br>
+![](images/ConfigKafkaConsumer2.png)
+Some of the important cofiguration parameters are marked in red box.
+
+> Note that the "Group ID" configuration are different for the two consumers. This is important since we want to implement a fan-out messaging. That is a single Kafka partition consumed by multiple consumers, each maintaining its own message offset.
+
+
+## nonononon
+
+
+

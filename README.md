@@ -47,6 +47,11 @@ We will create separate graphs for these two steps.
 The following figure illustrates the initial loading graph:<br><br>
 ![](images/GraphInitialLoading.png)
 
+The configuration of the table replicator operator is as below figure illustrated <br><br>
+![](images/ConfigTableReplicatorInitiaLoading.png)
+Some of the important cofiguration parameters are marked in red box.
+> Note that the **deltaGrapMode** is set to Manual. This ensures the graph would finish its execution once the intial loading completed. Otherwise, the graph would run indefinitely to track further delta changes.
+
 ## Delta extraction[(Graph source code)](https://github.com/Andyyh2005/log-based-integration-with-DI/blob/master/src/vrep/vflow/graphs/CDC_InitialLoading_test/graph.json)
 The following figure illustrates the initial loading graph:<br><br>
 ![](images/GraphInitialLoading.png)

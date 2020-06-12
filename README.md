@@ -175,22 +175,22 @@ It simply parse the target file contnet line by line. And each line represents a
 ### Kafka Producer
 Its configuration is illustrated as below.<br><br>
 ![](images/ConfigKafkaProducer.png)
+
 Some of the important cofiguration parameters are marked in red box.
 
 ### Kafka Consumer1
 Its configuration is illustrated as below.<br><br>
 ![](images/ConfigKafkaConsumer1.png)
+
 Some of the important cofiguration parameters are marked in red box.
 
 ### Kafka Consumer2
 Its configuration is illustrated as below.<br><br>
 ![](images/ConfigKafkaConsumer2.png)
+
 Some of the important cofiguration parameters are marked in red box.
 
-> Note that the "Group ID" configuration are different for the two consumers. This is important since we want to implement a fan-out messaging. That is a single Kafka partition consumed by multiple consumers, each maintaining its own message offset.
-
-
-## nonononon
+> Note that the "Group ID" configuration are different for the two consumers. This is important since we want to achieve fan-out messaging. That is, a single Kafka partition consumed by multiple consumers, each maintaining its own message offset.
 
 
 

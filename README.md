@@ -3,6 +3,8 @@
 Log-based integration is getting popular for integrating different data systems. By capturing the changes in a database and continually apply the same changes to derived data systems, the data in the derived systems is match with the data in the database as long as the message ordering of changed data stream is preserved. The derived data systems are consumers of the changed data stream, as illustrated in below figure.<br><br>
 ![](images/illustration.png)
 
+> The derived data systems are downstream consumers, in practice, they might be indexes, caches, analytics systems, etc. 
+
 In this toturial, we want to explore how to achieve data integration between soure database and various other derived data systems using a log-based approach in SAP Data Intelligence.
 
 In order to build a log-based intergtation approach, we need two critical compotents:
@@ -23,6 +25,24 @@ Apache Kafka is a message broker which provides a total ordering of the messages
 
 SAP Data Intelligence has built-in Kafka producer/consumer operators.
 
-## Get started
-Now we have our tools ready, let's see how to implement a concret integration scenario. The basic idea is illustrated as below.
+## Getting started
+Now we have our tools ready, let's see how to implement a concret integration scenario.
+> For simplicity, we only use factitious data for demontation purpose.  
 
+For the soure database table, its table schema and records are as below figure illustrated.<br><br>
+![](images/hanaSourceSchema.png)
+
+![](images/HanaSourceTable.png.png)
+As you can see, the table initially contains 6 records.
+> For simplicity, we only use factitious data for demontation purpose.
+
+Our approach involves two steps.
+1. Initial loading source table data.
+2. continuously capture source table changes(Delta extraction).
+
+We will create graphs separatly for these two steps.
+
+
+## Initial loading
+
+## Delta extraction

@@ -29,19 +29,20 @@ SAP Data Intelligence has built-in Kafka producer/consumer operators.
 Now we have our tools ready, let's see how to implement a concret integration scenario.
 > For simplicity, we only use factitious data for demontation purpose.  
 
-For the soure database table, its table schema and records are as below figure illustrated.<br><br>
+For the soure database table, its table schema is illustrated as below.<br><br>
 ![](images/hanaSourceSchema.png)
 
-![](images/HanaSourceTable.png.png)
+The table records are illustrated below.<br><br>
+![](images/HanaSourceTable.png)
+
 As you can see, the table initially contains 6 records.
 > For simplicity, we only use factitious data for demontation purpose.
 
 Our approach involves two steps.
 1. Initial loading source table data.
-2. continuously capture source table changes(Delta extraction).
+2. Continuously capture source table changes(Delta extraction).
 
 We will create graphs separatly for these two steps.
-
 
 ## Initial loading
 

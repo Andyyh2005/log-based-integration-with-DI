@@ -37,21 +37,31 @@ The table records are illustrated below.<br><br>
 As you can see, the table initially contains 6 records.
 > For simplicity, we only use factitious data for demonstration purpose.
 
-Our approach involves two steps which play different roles.
+We would first do an initial load to load all the 6 records to a file in Data Intelligence local file system. Then Continuously capture the subsequent table changes into a Kafka topic, and further apply the changes to the downstream operators.
+
+Our approach involves two sequential tasks playing different roles.
 1. Initial loading source table data.
 2. Continuously capture source table changes(Delta extraction).
 
-We will create separate graphs for these two steps.
+We will create separate graphs for these two tasks.
 
 ## Initial loading [(Graph source code)](https://github.com/Andyyh2005/log-based-integration-with-DI/blob/master/src/vrep/vflow/graphs/CDC_InitialLoading_test/graph.json)
 The following figure illustrates the initial loading graph:<br><br>
 ![](images/GraphInitialLoading.png)
 
-The configuration of the table replicator operator is as below figure illustrated <br><br>
+The configuration of the table replicator operator is illustrated as below.<br><br>
 ![](images/ConfigTableReplicatorInitiaLoading.png)
 Some of the important cofiguration parameters are marked in red box.
 > Note that the **deltaGrapMode** is set to Manual. This ensures the graph would finish its execution once the intial loading completed. Otherwise, the graph would run indefinitely to track further delta changes.
 
+Now run the graph and verify the target file has been generated.<br><br>
+![](images/FileInitialLoading.png)
+
+Also, verify the table content has been replicated to the target file successfully.<br><br>
+![](images/FileInitialLoadingContent.png)
+
+Now we see that we have successfully replicated the conent of HANA source table to the specified tagret file. let's turn to the Delta extraction task.
+
 ## Delta extraction[(Graph source code)](https://github.com/Andyyh2005/log-based-integration-with-DI/blob/master/src/vrep/vflow/graphs/CDC_InitialLoading_test/graph.json)
 The following figure illustrates the initial loading graph:<br><br>
-![](images/GraphInitialLoading.png)
+![](images/FileInitialLoadingContent.png)

@@ -192,5 +192,28 @@ Some of the important cofiguration parameters are marked in red box.
 
 > Note that the "Group ID" configuration are different for the two consumers. This is important since we want to achieve fan-out messaging. That is, a single Kafka partition consumed by multiple consumers, each maintaining its own message offset.
 
+The graph is ready. Now We can start run the graph by clicking the run button. 
+
+Next we will start to write to source table through insert, update and delete operations and observe how the changes will be replicated into the derived systems.
+
+### Insert
+Let's insert one record into the source table by running the below SQL statement.
+```
+INSERT INTO "TRIALEDITION1"."HANA_SOURCE" VALUES (7, 3, 40)
+```
+
+Go to Data Intelligence Local file system workspaces, check and verify the target file has been generated, as below figure illustrated.<br><br>
+![](images/FileDeltaInsert.png)
+
+Open that file and verify the inserted record has been replicated to the target file successfully, as below figure illustrated.<br><br>
+![](images/FileIDeltaInsertContent.png)
+
+Finally, we open the wiretap UI to check its output, we can see both wiretap output the same thing, as below figure illustrated.<br><br>
+![](images/changeConsumer1.png)
+
+
+
+
+
 
 

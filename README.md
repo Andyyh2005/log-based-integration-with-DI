@@ -5,13 +5,11 @@ Log-based integration is getting popular for integrating different data systems.
 
 > The derived data systems are downstream consumers, in practice, they might be indexes, caches, analytics systems, etc. 
 
-In this toturial, we want to explore how to achieve data integration between soure database and various other derived data systems using a log-based approach in SAP Data Intelligence.
-
-In order to build a log-based intergtation approach, we need two critical compotents:
+In order to build a log-based intergtation, we need two critical compotents:
 - A CDC tool for capturing database changes.
 - A message borker for persisting messages stream while preserving the message ordering.
 
-SAP Data Intelligence provides hundreds of out-of-box operators for user to choose and combine them into a powerful data pipline to implement data driven application. Now Let's see how SAP Data Intelligence's built-in operators can satisfy above two requirements.
+In this toturial, we want to explore how to achieve data integration between soure database and various other derived data systems using a log-based approach in SAP Data Intelligence.
 
 ### CDC
 Change data capture(CDC) is the process of observing all data changes written to a database and extracting them in a form in which they can be replicated to other systems. 
@@ -25,23 +23,23 @@ Apache Kafka is a message broker which provides a total ordering of the messages
 
 SAP Data Intelligence has built-in Kafka producer/consumer operators.
 
-## Getting started
-Now we have our tools ready, let's see how to implement a concret integration scenario.
+Next, we will see how to leavage these two operators to implement a concret integration scenario.
 
-For the soure database table, its table schema is illustrated as below.<br><br>
+## Getting started
+We have a HANA database table, and its schema is illustrated as below.<br><br>
 ![](images/hanaSourceSchema.png)
 
-The table records are illustrated below.<br><br>
+The table content is illustrated as below.<br><br>
 ![](images/HanaSourceTable.png)
 
-As you can see, the table initially contains 6 records.
+The table initially contains 6 records.
 > For simplicity, we only use factitious data for demonstration purpose.
 
-We would first do an initial load to load all the 6 records to a file in Data Intelligence local file system. Then Continuously capture the subsequent table changes into a Kafka topic, and further apply the changes to the downstream operators.
+We would first do an initial load to load all the records to a file in Data Intelligence local file system. Then Continuously capture the subsequent table changes into a Kafka topic, and further apply the changes to the downstream operators.
 
 Our approach involves two sequential tasks playing different roles.
-1. Initial loading source table data.
-2. Continuously capture source table changes(Delta extraction).
+1. Initial loading the data of source table to a taget file.
+2. Continuously capture source table changes(Delta extraction), publish them into a Kafka topic and let derived systems consume these changes.
 
 We will create separate graphs for these two tasks.
 
@@ -62,7 +60,7 @@ Also, open the file and verify the table content has been replicated to the targ
 
 Now we see that our initial loading task has been finished successfully. let's turn to the Delta extraction task.
 
-## Delta extraction[(Graph source code)](https://github.com/Andyyh2005/log-based-integration-with-DI/blob/master/src/vrep/vflow/graphs/CDC_InitialLoading_test/graph.json)
+## Delta extraction[(Graph source code)](https://github.com/Andyyh2005/log-based-integration-with-DI/blob/master/src/vrep/vflow/graphs/CDC_DeltaExtraction_test/graph.json)
 The following figure illustrates the Delta extraction graph:<br><br>
 ![](images/GraphDeltaExtraction.png)
 
@@ -243,5 +241,14 @@ Open that file and verify the change messages for the deleted record has been re
 Finally, we open the Change consumer wiretap UI to check its output, we can see both wiretap output the same thing, as below figure illustrated.<br><br>
 ![](images/changeConsumer1Delete.png)
 
+## Summary
+This toturial shows how it is easy to build a data integration pipeline to sync different data systems using the built-in operators in SAP Data Intelligence. 
 
+build a  we see how it is easy to  database table changes have been successfully reflected into the downstream derived data systems.
 
+SAP Data Intelligence is a powerful In this toturial,
+
+Log-based integration is getting popular for integrating different data systems. By capturing the changes in a database and continually apply the same changes to derived data systems, the data in the derived systems is match with the data in the database as long as the message ordering of changed data stream is preserved. The derived data systems are consumers of the changed data stream, as illustrated in below figure.<br><br>
+![](images/illustration.png)
+
+In this toturial, we want to explore how to achieve data integration between soure database and various other derived data systems using a log-based approach in SAP Data Intelligence.

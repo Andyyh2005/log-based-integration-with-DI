@@ -11,14 +11,14 @@
             "limit": "2"
         }
     },
-    "description": "CDC Initial Loading",
+    "description": "CDC Delta extraction and Update derived system",
     "processes": {
         "tablereplicationtask1": {
             "component": "com.sap.database.table.replicator",
             "metadata": {
-                "label": "Initial loading",
-                "x": 186,
-                "y": 12,
+                "label": "CDC (delta tracking)",
+                "x": 201.99999904632568,
+                "y": 252,
                 "height": 80,
                 "width": 120,
                 "extensible": false,
@@ -26,18 +26,18 @@
                     "source": "HANA",
                     "hanaConnection": {
                         "configurationType": "Configuration Manager",
-                        "connectionID": "HANA_LOCALHOST"
+                        "connectionID": ""
                     },
-                    "hanaAdaptedDataset": "TRIALEDITION1.HANA_SOURCE",
                     "executionMode": "Delta",
                     "hanaPartitionType": "None",
                     "deltaProperties": {
                         "deltaBatchSize": 100000,
-                        "deltaGraphMode": "Manual",
-                        "cdcApplierType": "Track Change History"
+                        "deltaGraphMode": "Polling Interval",
+                        "cdcApplierType": "Track Change History",
+                        "maxPollingInterval": 60
                     },
                     "target": "Local",
-                    "path": "exampleData/CDC/cdc_initial_<timestamp>.csv",
+                    "path": "",
                     "additionalProperties_csv": {
                         "columnDelimiter": ",",
                         "csvHeaderIncluded": true
@@ -50,19 +50,205 @@
             "metadata": {
                 "label": "Constant Generator",
                 "x": 17,
-                "y": 12,
+                "y": 252,
                 "height": 80,
                 "width": 120,
                 "extensible": true,
                 "config": {}
             }
         },
+        "readfile1": {
+            "component": "com.sap.file.read",
+            "metadata": {
+                "label": "Read Delta File",
+                "x": 670.999997138977,
+                "y": 132,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "mode": "On input",
+                    "dynamicConnection": {
+                        "configurationType": "System Management Files (\"/files/\")",
+                        "vrepRoot": "/files/"
+                    }
+                }
+            }
+        },
+        "wiretap2": {
+            "component": "com.sap.util.wiretap",
+            "metadata": {
+                "label": "Delta file content",
+                "x": 1040.9999952316284,
+                "y": 87,
+                "height": 80,
+                "width": 120,
+                "ui": "dynpath",
+                "config": {}
+            }
+        },
+        "messageoperator1": {
+            "component": "com.sap.system.jsmengine",
+            "metadata": {
+                "label": "Remove path prefix",
+                "x": 386.99999809265137,
+                "y": 132,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "script": "$.setPortCallback(\"input\",onInput);\n\nfunction onInput(ctx,s) {\n    var msg = {};\n\n    msg.Attributes = {};\n    for (var key in s.Attributes) {\n        msg.Attributes[key] = s.Attributes[key];\n    }\n    \n    msg.Body = s.Body.replace(/^\\/vrep/, '');\n    $.output(msg);\n}\n"
+                }
+            }
+        },
+        "12multiplexer2": {
+            "component": "com.sap.system.multiplexer.1-2",
+            "metadata": {
+                "label": "1:2 Multiplexer",
+                "x": 855.9999961853027,
+                "y": 132,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {}
+            }
+        },
+        "wiretap3": {
+            "component": "com.sap.util.wiretap",
+            "metadata": {
+                "label": "Show changes",
+                "x": 1694.9999923706055,
+                "y": 72,
+                "height": 80,
+                "width": 120,
+                "ui": "dynpath",
+                "config": {}
+            }
+        },
+        "messageoperator2": {
+            "component": "com.sap.system.jsmengine",
+            "metadata": {
+                "label": "Parse & send changes",
+                "x": 1225.999994277954,
+                "y": 132,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "script": "$.setPortCallback(\"input\",onInput);\n\nfunction isByteArray(data) {\n    switch (Object.prototype.toString.call(data)) {\n        case \"[object Int8Array]\":\n        case \"[object Uint8Array]\":\n            return true;\n        case \"[object Array]\":\n        case \"[object GoArray]\":\n            return data.length > 0 && typeof data[0] === 'number';\n    }\n    return false;\n}\n\nfunction onInput(ctx,s) {\n    var inbody = s.Body;\n    var inattributes = s.Attributes;\n    \n    var msg = {};\n    msg.Attributes = {};\n    for (var key in inattributes) {\n        msg.Attributes[key] = inattributes[key];\n    }\n\n    // convert the body into string if it is bytes\n    if (isByteArray(inbody)) {\n        inbody = String.fromCharCode.apply(null, inbody);\n    }\n    \n    var lines = inbody.split(/\\r\\n/);\n    \n    if (typeof inbody === 'string') {\n        // if the body is a string (e.g., a plain text or json string),\n        msg.Attributes[\"js.action\"] = \"parseFile\";\n        \n        var readOffset = 1;\n        var dataCols = lines[0].split(',');\n        var o_inter = {};\n        var fields = [];\n\n        lines.slice(readOffset).forEach(function(line) {\n            if(line.length !== 0){\n                fields = line.split(',')\n                dataCols.forEach(function(c, i) {\n                    o_inter[c] = fields[i];\n                    \n                });\n                ++readOffset;\n                msg.Body = o_inter;\n                $.output(msg);\n           }\n        });\n    }\n    else {\n        // if the body is an object (e.g., a json object),\n        // forward the body and indicate it in attribute js.action\n        msg.Body = inbody;\n        msg.Attributes[\"js.action\"] = \"noop\";\n        $.output(msg);\n    }\n}\n"
+                }
+            }
+        },
+        "fromfile1": {
+            "component": "com.sap.file.fromFile",
+            "metadata": {
+                "label": "From File",
+                "x": 1075.4999952316284,
+                "y": 207,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "tostringconverter1": {
+            "component": "com.sap.util.toStringConverter",
+            "metadata": {
+                "label": "ToString Converter",
+                "x": 1410.9999933242798,
+                "y": 147,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "12multiplexer1": {
+            "component": "com.sap.system.multiplexer.1-2",
+            "metadata": {
+                "label": "1:2 Multiplexer",
+                "x": 1509.9999933242798,
+                "y": 132,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {}
+            }
+        },
+        "kafkaproducer1": {
+            "component": "com.sap.kafka.producer",
+            "metadata": {
+                "label": "Kafka Producer",
+                "x": 1694.9999923706055,
+                "y": 192,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "brokers": "",
+                    "topic": "cdc_delta_topic",
+                    "manualPartitioning": false
+                }
+            }
+        },
+        "wiretap1": {
+            "component": "com.sap.util.wiretap",
+            "metadata": {
+                "label": "Change consumer1",
+                "x": 201.99999904632568,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "ui": "dynpath",
+                "config": {}
+            }
+        },
+        "wiretap4": {
+            "component": "com.sap.util.wiretap",
+            "metadata": {
+                "label": "Change consumer2",
+                "x": 201.99999904632568,
+                "y": 132,
+                "height": 80,
+                "width": 120,
+                "ui": "dynpath",
+                "config": {}
+            }
+        },
+        "kafkaconsumer1": {
+            "component": "com.sap.kafka.consumer2",
+            "metadata": {
+                "label": "Kafka Consumer 1",
+                "x": 17,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "brokers": "",
+                    "topics": "cdc_delta_topic",
+                    "groupId": "A_group",
+                    "autoGroupId": false,
+                    "autoCommit": true
+                }
+            }
+        },
+        "kafkaconsumer2": {
+            "component": "com.sap.kafka.consumer2",
+            "metadata": {
+                "label": "Kafka Consumer 2",
+                "x": 17,
+                "y": 132,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "brokers": "",
+                    "groupId": "B_group",
+                    "topics": "cdc_delta_topic"
+                }
+            }
+        },
         "messageoperator3": {
             "component": "com.sap.system.jsmengine",
             "metadata": {
-                "label": "Determine last Batch",
-                "x": 370.9999990463257,
-                "y": 12,
+                "label": "Determine last batch",
+                "x": 1879.9999914169312,
+                "y": 132,
                 "height": 80,
                 "width": 120,
                 "extensible": true,
@@ -75,10 +261,21 @@
             "component": "com.sap.util.graphTerminator",
             "metadata": {
                 "label": "Graph Terminator",
-                "x": 539.9999990463257,
-                "y": 12,
+                "x": 2048.999991416931,
+                "y": 132,
                 "height": 80,
                 "width": 120,
+                "config": {}
+            }
+        },
+        "tofile1": {
+            "component": "com.sap.file.toFile",
+            "metadata": {
+                "label": "To File",
+                "x": 571.999997138977,
+                "y": 147,
+                "height": 50,
+                "width": 50,
                 "config": {}
             }
         }
@@ -87,7 +284,7 @@
     "connections": [
         {
             "metadata": {
-                "points": "141,52 181,52"
+                "points": "141,292 196.99999904632568,292"
             },
             "src": {
                 "port": "out",
@@ -100,7 +297,163 @@
         },
         {
             "metadata": {
-                "points": "494.9999990463257,52 534.9999990463257,52"
+                "points": "325.9999990463257,283 353.9999985694885,283 353.9999985694885,172 381.99999809265137,172"
+            },
+            "src": {
+                "port": "result",
+                "process": "tablereplicationtask1"
+            },
+            "tgt": {
+                "port": "input",
+                "process": "messageoperator1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "794.999997138977,163 822.9999966621399,163 822.9999966621399,172 850.9999961853027,172"
+            },
+            "src": {
+                "port": "file",
+                "process": "readfile1"
+            },
+            "tgt": {
+                "port": "in1",
+                "process": "12multiplexer2"
+            }
+        },
+        {
+            "metadata": {
+                "points": "979.9999961853027,163 1007.9999957084656,163 1007.9999957084656,127 1035.9999952316284,127"
+            },
+            "src": {
+                "port": "out1",
+                "process": "12multiplexer2"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "wiretap2"
+            }
+        },
+        {
+            "metadata": {
+                "points": "979.9999961853027,181 1007.9999957084656,181 1007.9999957084656,232 1070.4999952316284,232"
+            },
+            "src": {
+                "port": "out2",
+                "process": "12multiplexer2"
+            },
+            "tgt": {
+                "port": "file",
+                "process": "fromfile1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1129.4999952316284,241 1192.9999947547913,241 1192.9999947547913,172 1220.999994277954,172"
+            },
+            "src": {
+                "port": "message",
+                "process": "fromfile1"
+            },
+            "tgt": {
+                "port": "input",
+                "process": "messageoperator2"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1349.999994277954,172 1377.999993801117,172 1377.999993801117,163 1405.9999933242798,163"
+            },
+            "src": {
+                "port": "output",
+                "process": "messageoperator2"
+            },
+            "tgt": {
+                "port": "ininterface",
+                "process": "tostringconverter1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1464.9999933242798,172 1504.9999933242798,172"
+            },
+            "src": {
+                "port": "outstring",
+                "process": "tostringconverter1"
+            },
+            "tgt": {
+                "port": "in1",
+                "process": "12multiplexer1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1633.9999933242798,163 1661.9999928474426,163 1661.9999928474426,112 1689.9999923706055,112"
+            },
+            "src": {
+                "port": "out1",
+                "process": "12multiplexer1"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "wiretap3"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1633.9999933242798,181 1661.9999928474426,181 1661.9999928474426,232 1689.9999923706055,232"
+            },
+            "src": {
+                "port": "out2",
+                "process": "12multiplexer1"
+            },
+            "tgt": {
+                "port": "message",
+                "process": "kafkaproducer1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "141,43 168.99999952316284,43 168.99999952316284,52 196.99999904632568,52"
+            },
+            "src": {
+                "port": "message",
+                "process": "kafkaconsumer1"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "wiretap1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "141,163 168.99999952316284,163 168.99999952316284,172 196.99999904632568,172"
+            },
+            "src": {
+                "port": "message",
+                "process": "kafkaconsumer2"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "wiretap4"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1818.9999923706055,232 1846.9999918937683,232 1846.9999918937683,172 1874.9999914169312,172"
+            },
+            "src": {
+                "port": "markoffsets",
+                "process": "kafkaproducer1"
+            },
+            "tgt": {
+                "port": "input",
+                "process": "messageoperator3"
+            }
+        },
+        {
+            "metadata": {
+                "points": "2003.9999914169312,172 2043.9999914169312,172"
             },
             "src": {
                 "port": "output",
@@ -113,15 +466,28 @@
         },
         {
             "metadata": {
-                "points": "310,43 337.99999952316284,43 337.99999952316284,52 365.9999990463257,52"
+                "points": "510.99999809265137,172 538.9999976158142,172 538.9999976158142,163 566.999997138977,163"
             },
             "src": {
-                "port": "result",
-                "process": "tablereplicationtask1"
+                "port": "output",
+                "process": "messageoperator1"
             },
             "tgt": {
-                "port": "input",
-                "process": "messageoperator3"
+                "port": "path",
+                "process": "tofile1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "625.999997138977,172 665.999997138977,172"
+            },
+            "src": {
+                "port": "file",
+                "process": "tofile1"
+            },
+            "tgt": {
+                "port": "ref",
+                "process": "readfile1"
             }
         }
     ],

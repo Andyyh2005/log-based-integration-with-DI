@@ -1,0 +1,129 @@
+{
+    "properties": {},
+    "iconsrc": "consumer.svg",
+    "groupResources": {
+        "memory": {
+            "request": "512M",
+            "limit": "4096M"
+        },
+        "cpu": {
+            "request": "0.5",
+            "limit": "2"
+        }
+    },
+    "description": "CDC Initial Loading",
+    "processes": {
+        "tablereplicationtask1": {
+            "component": "com.sap.database.table.replicator",
+            "metadata": {
+                "label": "Initial loading",
+                "x": 186,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "extensible": false,
+                "config": {
+                    "source": "HANA",
+                    "hanaConnection": {
+                        "configurationType": "Configuration Manager",
+                        "connectionID": ""
+                    },
+                    "executionMode": "Delta",
+                    "hanaPartitionType": "None",
+                    "deltaProperties": {
+                        "deltaBatchSize": 100000,
+                        "deltaGraphMode": "Manual",
+                        "cdcApplierType": "Track Change History"
+                    },
+                    "target": "Local",
+                    "path": "",
+                    "additionalProperties_csv": {
+                        "columnDelimiter": ",",
+                        "csvHeaderIncluded": true
+                    }
+                }
+            }
+        },
+        "constantgenerator2": {
+            "component": "com.sap.util.constantGenerator",
+            "metadata": {
+                "label": "Constant Generator",
+                "x": 17,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {}
+            }
+        },
+        "messageoperator3": {
+            "component": "com.sap.system.jsmengine",
+            "metadata": {
+                "label": "Determine last Batch",
+                "x": 370.9999990463257,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "script": "$.setPortCallback(\"input\",onInput);\n\nfunction onInput(ctx,s) {\n    if (s.Attributes[\"message.lastBatch\"]) {\n        $.output({});\n    }\n}\n"
+                }
+            }
+        },
+        "graphterminator1": {
+            "component": "com.sap.util.graphTerminator",
+            "metadata": {
+                "label": "Graph Terminator",
+                "x": 539.9999990463257,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "config": {}
+            }
+        }
+    },
+    "groups": [],
+    "connections": [
+        {
+            "metadata": {
+                "points": "141,52 181,52"
+            },
+            "src": {
+                "port": "out",
+                "process": "constantgenerator2"
+            },
+            "tgt": {
+                "port": "inTrigger",
+                "process": "tablereplicationtask1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "494.9999990463257,52 534.9999990463257,52"
+            },
+            "src": {
+                "port": "output",
+                "process": "messageoperator3"
+            },
+            "tgt": {
+                "port": "stop",
+                "process": "graphterminator1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "310,43 337.99999952316284,43 337.99999952316284,52 365.9999990463257,52"
+            },
+            "src": {
+                "port": "result",
+                "process": "tablereplicationtask1"
+            },
+            "tgt": {
+                "port": "input",
+                "process": "messageoperator3"
+            }
+        }
+    ],
+    "inports": {},
+    "outports": {}
+}

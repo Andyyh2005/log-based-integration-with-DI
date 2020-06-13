@@ -62,14 +62,14 @@ The following figure illustrates the Delta extraction graph:<br><br>
 ![](images/GraphDeltaExtraction.png)
 
 Let's take an overview of the dataflow sequence.
-- The constant generator operator will trigger the Table Replicator to begin the CDC delta tracking.
-- The Table Replicator operator(labeled as "CDC (delta tracking)") will replicate the database changes to a tagret file like what happend in the initial loading. 
-- The JS operator(labeled as "Remove path prefix") will remove the '/vrep' prefix from the target file path. The prefix was added by Table Replicator operator which will prevent the downstream Read File operator from finding the file if we do not remove it.
-- The Read File operator(labeled as "Read Delta File") will read the target file content and send it to downstream JS operator.
-- The JS operator(labeled as "Parse & send changes") will parse the received file content and send the parsed messages into Kafka topic.
-- The Kakfa Producer operator will receieve the incoming messages and publish them into the specified topic on the Kafka cluster.
-- The Kafka Consumers receieve the messages from the topic on the Kafka cluster.
-- The Connected Wiretap opertors(labeled as "Change consumer1" and "Change consumer2") act as the derived data system consume and apply the receieved messages.
+- The constant generator operator(==1==) will trigger the Table Replicator to begin the CDC delta tracking.
+- The Table Replicator operator (==2==) will replicate the database changes to a tagret file like what happend in the initial loading. 
+- The JS operator (==3==) will remove the '/vrep' prefix from the target file path. The prefix was added by Table Replicator operator which will prevent the downstream Read File operator from finding the file if we do not remove it.
+- The Read File operator (==4==) will read the target file content and send it to downstream JS operator.
+- The JS operator (==5==) will parse the received file content and send the parsed messages into Kafka topic.
+- The Kakfa Producer operator (==6==) will receieve the incoming messages and publish them into the specified topic on the Kafka cluster.
+- The Kafka Consumers (==7==, ==8==) receieve the messages from the topic on the Kafka cluster.
+- The Connected Wiretap opertors (==9==, ==10==) act as the derived data system consume and apply the receieved messages.
 
 Now let's look at the configuraion of some operators.
 

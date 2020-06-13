@@ -237,7 +237,7 @@ Go to Data Intelligence Local file system workspaces, check and verify the targe
 ![](images/FileDeltaDelete.png)
 
 Open that file and verify the change messages for the deleted record has been replicated to the target file successfully, as below figure illustrated.<br><br>
-![](images/FileDeltaUpdate.png)
+![](images/FileDeltaDeleteContent.png)
 
 Finally, we open the Change consumer wiretap UI to check its output, we can see both wiretap output the same thing, as below figure illustrated.<br><br>
 ![](images/changeConsumer1Delete.png)

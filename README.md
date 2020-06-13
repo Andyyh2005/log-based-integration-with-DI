@@ -222,7 +222,7 @@ Go to Data Intelligence Local file system workspaces, check and verify the targe
 ![](images/FileDeltaUpdate.png)
 
 Open that file and verify the change messages of the updateed record has been replicated to the target file successfully, as below figure illustrated.<br><br>
-![](images/FileIDeltaUpdateContent.png)
+![](images/FileDeltaUpdateContent.png)
 
 Finally, we open the Change consumer wiretap UI to check its output, we can see both wiretap output the same thing, as below figure illustrated.<br><br>
 ![](images/changeConsumer1Update.png)
@@ -233,6 +233,7 @@ Let's delete one record in the source table by running the below SQL statement.
 ```
 DELETE FROM "TRIALEDITION1"."HANA_SOURCE" WHERE  ID = 7; 
 ```
+
 Go to Data Intelligence Local file system workspaces, check and verify the target file has been generated, as below figure illustrated.<br><br>
 ![](images/FileDeltaDelete.png)
 
@@ -241,4 +242,6 @@ Open that file and verify the change messages for the deleted record has been re
 
 Finally, we open the Change consumer wiretap UI to check its output, we can see both wiretap output the same thing, as below figure illustrated.<br><br>
 ![](images/changeConsumer1Delete.png)
+
+
 

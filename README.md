@@ -208,10 +208,27 @@ Go to Data Intelligence Local file system workspaces, check and verify the targe
 Open that file and verify the inserted record has been replicated to the target file successfully, as below figure illustrated.<br><br>
 ![](images/FileIDeltaInsertContent.png)
 
-Finally, we open the wiretap UI to check its output, we can see both wiretap output the same thing, as below figure illustrated.<br><br>
-![](images/changeConsumer1.png)
+Finally, we open the Change consumer wiretap UI to check its output, we can see both wiretap output the same thing, as below figure illustrated.<br><br>
+![](images/changeConsumer1Insert.png)
 
+#### Update
+Let's update one record in the source table by running the below SQL statement.
 
+```
+UPDATE "TRIALEDITION1"."HANA_SOURCE" SET TEMPERATURE = TEMPERATURE+ 1 WHERE ID = 1
+```
+
+Go to Data Intelligence Local file system workspaces, check and verify the target file has been generated, as below figure illustrated.<br><br>
+![](images/FileDeltaUpdate.png)
+
+Open that file and verify the change messages of the updateed record has been replicated to the target file successfully, as below figure illustrated.<br><br>
+![](images/FileIDeltaUpdateContent.png)
+
+Finally, we open the Change consumer wiretap UI to check its output, we can see both wiretap output the same thing, as below figure illustrated.<br><br>
+![](images/changeConsumer1Update.png)
+
+### Delete
+Let's delete one record in the source table by running the below SQL statement.
 
 
 
